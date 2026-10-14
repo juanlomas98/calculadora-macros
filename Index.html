@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Macros S24</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card: #1e293b;
+      --card-alt: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #3b82f6;
+      --prot: #ef4444;
+      --carbs: #f59e0b;
+      --fat: #10b981;
+      --kcal: #818cf8;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); padding-bottom: 85px; }
+
+    /* Barra Superior Fija con Resumen de Macros */
+    .sticky-summary {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border); padding: 10px 12px;
+    }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 600px; margin: 0 auto; }
+    .sum-item { background: var(--card); border-radius: 8px; padding: 8px 6px; text-align: center; border: 1px solid var(--border); }
+    .sum-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+    .sum-val { font-size: 0.95rem; font-weight: 700; margin: 2px 0; }
+    .sum-rem { font-size: 0.68rem; color: var(--muted); }
+    .bar-bg { height: 5px; background: #0f172a; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .bar-fill { height: 100%; transition: width 0.2s; }
+
+    .main-wrap { max-width: 600px; margin: 0 auto; padding: 12px; }
+    .tab-section { display: none; }
+    .tab-section.active { display: block; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    h2 { font-size: 1.05rem; font-weight: 700; }
+    .meal-badge { font-size: 0.75rem; background: var(--bg); padding: 4px 8px; border-radius: 6px; color: #cbd5e1; }
+
+    label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+    input, select {
+      width: 100%; padding: 11px 10px; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; font-size: 0.95rem;
+    }
+    input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .row-add { display: grid; grid-template-columns: 1fr 110px; gap: 8px; margin-bottom: 8px; }
+
+    button {
+      background: var(--accent); color: #fff; border: none; padding: 11px 14px;
+      border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; width: 100%;
+    }
+    button:active { transform: scale(0.98); }
+    .btn-sec { background: var(--card-alt); color: #e2e8f0; }
+    .btn-danger { background: rgba(220, 38, 38, 0.15); color: #f87171; border: 1px solid #7f1d1d; width: auto; padding: 6px 10px; font-size: 0.78rem; }
+
+    /* Lista de alimentos cargados en móvil */
+    .food-item {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px; margin-top: 8px;
+    }
+    .food-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+    .food-name { font-size: 0.9rem; font-weight: 600; line-height: 1.3; }
+    .food-macros { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .food-controls { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .stepper { display: flex; align-items: center; gap: 4px; }
+    .btn-step { width: 38px; padding: 7px 0; font-size: 0.85rem; background: var(--card-alt); border-radius: 6px; }
+    .gram-input { width: 75px; text-align: center; padding: 6px; font-weight: 700; font-size: 0.95rem; }
+
+    /* Barra de Navegación Inferior estilo App */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+      background: #0f172a; border-top: 1px solid var(--border);
+      display: grid; grid-template-columns: repeat(3, 1fr); max-width: 600px; margin: 0 auto;
+    }
+    .nav-btn {
+      background: transparent; color: var(--muted); border-radius: 0;
+      padding: 12px 4px; font-size: 0.78rem; font-weight: 600; border-top: 3px solid transparent;
+    }
+    .nav-btn.active { color: var(--accent); border-top-color: var(--accent); background: rgba(59, 130, 246, 0.06); }
+
+    .mode-switch {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+      background: var(--bg); padding: 4px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border);
+    }
+    .mode-opt {
+      padding: 7px; font-size: 0.78rem; background: transparent; color: var(--muted); border-radius: 6px;
+    }
+    .mode-opt.active { background: var(--card-alt); color: #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- DASHBOARD SUPERIOR FIJO -->
+  <div class="sticky-summary">
+    <div class="summary-grid">
+      <div class="sum-item">
+        <div class="sum-label">Kcal</div>
+        <div class="sum-val" id="totKcal">0</div>
+        <div class="sum-rem" id="remKcal">/ 2950</div>
+        <div class="bar-bg"><div class="bar-fill" id="barKcal" style="width:0%; background:var(--kcal);"></div></div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-label">Prot (g)</div>
+        <div class="sum-val" id="totProt" style="color:#fca5a5;">0</div>
+        <div class="sum-rem" id="remProt">/ 196g</div>
+        <div class="bar-bg"><div class="bar-fill" id="barProt" style="width:0%; background:var(--prot);"></div></div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-label">Carbs (g)</div>
+        <div class="sum-val" id="totCarbs" style="color:#fcd34d;">0</div>
+        <div class="sum-rem" id="remCarbs">/ 343g</div>
+        <div class="bar-bg"><div class="bar-fill" id="barCarbs" style="width:0%; background:var(--carbs);"></div></div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-label">Grasa (g)</div>
+        <div class="sum-val" id="totFat" style="color:#6ee7b7;">0</div>
+        <div class="sum-rem" id="remFat">/ 88g</div>
+        <div class="bar-bg"><div class="bar-fill" id="barFat" style="width:0%; background:var(--fat);"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-wrap">
+    <!-- PESTAÑA 1: REGISTRO DIARIO DE COMIDAS -->
+    <div id="tab-meals" class="tab-section active">
+      <!-- Barra de Plantillas Rápidas -->
+      <div class="card" style="padding: 10px 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:0.8rem; font-weight:600; color:#cbd5e1;">Plantillas Rápidas de Día</span>
+          <button class="btn-danger" onclick="clearDay()" style="padding:4px 8px;">Vaciar Hoy</button>
+        </div>
+        <div class="row-2" style="margin-bottom:0;">
+          <button class="btn-sec" style="font-size:0.78rem; padding:8px;" onclick="loadTemplate('train')">Cargar Día Entreno</button>
+          <button class="btn-sec" style="font-size:0.78rem; padding:8px;" onclick="loadTemplate('rest')">Cargar Día Descanso</button>
+        </div>
+      </div>
+
+      <div id="mealsContainer"></div>
+    </div>
+
+    <!-- PESTAÑA 2: CATÁLOGO DE PRODUCTOS -->
+    <div id="tab-foods" class="tab-section">
+      <div class="card">
+        <h2 style="margin-bottom:10px;">Nuevo Producto (por 100g en crudo)</h2>
+        <div style="margin-bottom:8px;">
+          <label>Nombre del alimento</label>
+          <input type="text" id="newFoodName" placeholder="Ej. Ojo de bife magro crudo">
+        </div>
+        <div class="row-2">
+          <div>
+            <label>Kcal (cada 100g)</label>
+            <input type="number" inputmode="decimal" id="newFoodKcal" placeholder="155">
+          </div>
+          <div>
+            <label>Proteínas (g)</label>
+            <input type="number" inputmode="decimal" id="newFoodProt" placeholder="21">
+          </div>
+        </div>
+        <div class="row-2">
+          <div>
+            <label>Carbohidratos (g)</label>
+            <input type="number" inputmode="decimal" id="newFoodCarbs" placeholder="0">
+          </div>
+          <div>
+            <label>Grasas (g)</label>
+            <input type="number" inputmode="decimal" id="newFoodFat" placeholder="7.5">
+          </div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label>Tipo de cocción (para conversor cocido a crudo)</label>
+          <select id="newFoodType">
+            <option value="1.0">Sin cambio / Peso directo (1.0x)</option>
+            <option value="1.30">Carne / Pollo / Pescado (100g cocido = 130g crudo)</option>
+            <option value="1.25">Papa / Calabaza al horno (100g cocido = 125g crudo)</option>
+            <option value="0.36">Arroz / Fideos / Avena hervida (100g cocido = 36g crudo)</option>
+          </select>
+        </div>
+        <button onclick="addCustomFood()">Guardar Producto</button>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-bottom:10px;">Mis Productos (<span id="foodCount">0</span>)</h2>
+        <div id="catalogList"></div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 3: OBJETIVOS Y RESPALDO -->
+    <div id="tab-settings" class="tab-section">
+      <div class="card">
+        <h2 style="margin-bottom:10px;">Objetivos y Parámetros</h2>
+        <div class="row-2">
+          <div>
+            <label>Peso Corporal (kg)</label>
+            <input type="number" inputmode="decimal" id="userWeight" value="98" onchange="recalculateTargets()">
+          </div>
+          <div>
+            <label>Altura (cm)</label>
+            <input type="number" inputmode="numeric" id="userHeight" value="188" onchange="recalculateTargets()">
+          </div>
+        </div>
+        <div class="row-2">
+          <div>
+            <label>Edad</label>
+            <input type="number" inputmode="numeric" id="userAge" value="28" onchange="recalculateTargets()">
+          </div>
+          <div>
+            <label>Actividad Física</label>
+            <select id="userActivity" onchange="recalculateTargets()">
+              <option value="1.2">Sedentario (1.2)</option>
+              <option value="1.375">Ligero 1-3 d (1.375)</option>
+              <option value="1.55" selected>Fuerza 4 días (1.55)</option>
+              <option value="1.725">Intenso (1.725)</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label>Etapa / Objetivo</label>
+          <select id="userGoal" onchange="recalculateTargets()">
+            <option value="-15">Definición (-15% kcal)</option>
+            <option value="-10">Déficit Ligero (-10% kcal)</option>
+            <option value="0" selected>Mantenimiento / Recomposición (0%)</option>
+            <option value="8">Volumen Limpio (+8% kcal)</option>
+            <option value="custom">Calorías Manuales</option>
+          </select>
+        </div>
+        <div class="row-2">
+          <div>
+            <label>Kcal Objetivo</label>
+            <input type="number" inputmode="numeric" id="targetKcal" value="2950" onchange="saveTargetsManual()">
+          </div>
+          <div>
+            <label>Carbos Calculados (g)</label>
+            <input type="number" id="targetCarbs" readonly style="opacity:0.7;">
+          </div>
+        </div>
+        <div class="row-2">
+          <div>
+            <label>Proteína (g/kg)</label>
+            <input type="number" inputmode="decimal" id="protPerKg" step="0.1" value="2.0" onchange="recalculateMacrosFromRatio()">
+          </div>
+          <div>
+            <label>Grasas (g/kg)</label>
+            <input type="number" inputmode="decimal" id="fatPerKg" step="0.1" value="0.9" onchange="recalculateMacrosFromRatio()">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-bottom:10px;">Guardar Día Actual como Plantilla</h2>
+        <div class="row-2">
+          <button class="btn-sec" onclick="saveTemplate('train')">Guardar como Entreno</button>
+          <button class="btn-sec" onclick="saveTemplate('rest')">Guardar como Descanso</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-bottom:10px;">Exportar y Respaldar</h2>
+        <div class="row-2">
+          <button class="btn-sec" onclick="exportCSV()">Exportar CSV</button>
+          <button class="btn-sec" onclick="exportBackup()">Respaldar JSON</button>
+        </div>
+        <button class="btn-sec" style="margin-top:8px;" onclick="document.getElementById('importFile').click()">Importar Respaldo JSON</button>
+        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importBackup(event)">
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA INFERIOR -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-meals" onclick="switchTab('meals')">Comidas Hoy</button>
+    <button class="nav-btn" id="nav-foods" onclick="switchTab('foods')">Productos</button>
+    <button class="nav-btn" id="nav-settings" onclick="switchTab('settings')">Objetivos</button>
+  </div>
+
+<script>
+  // Base de datos en crudo + factor de conversión desde cocido (cookedToRaw)
+  const DEFAULT_FOODS = [
+    { id: 'f1', name: 'Pechuga de pollo sin piel (cruda)', kcal: 120, p: 22.5, c: 0, f: 2.6, conv: 1.30 },
+    { id: 'f2', name: 'Colita de cuadril magra (cruda)', kcal: 155, p: 21.0, c: 0, f: 7.5, conv: 1.30 },
+    { id: 'f3', name: 'Nalga / Bola de lomo / Peceto (crudo)', kcal: 135, p: 21.5, c: 0, f: 5.0, conv: 1.30 },
+    { id: 'f4', name: 'Carne picada especial magra (cruda)', kcal: 170, p: 20.0, c: 0, f: 10.0, conv: 1.30 },
+    { id: 'f5', name: 'Trucha en filete (cruda)', kcal: 148, p: 20.8, c: 0, f: 6.6, conv: 1.25 },
+    { id: 'f6', name: 'Atún al natural escurrido', kcal: 116, p: 26.0, c: 0, f: 1.0, conv: 1.0 },
+    { id: 'f7', name: 'Huevo entero sin cáscara (1 u ≈ 55g)', kcal: 143, p: 12.6, c: 0.7, f: 9.5, conv: 1.0 },
+    { id: 'f8', name: 'Claras de huevo (1 u ≈ 35g)', kcal: 52, p: 11.0, c: 0.7, f: 0.2, conv: 1.0 },
+    { id: 'f9', name: 'Queso Por Salut Light', kcal: 230, p: 22.0, c: 2.0, f: 15.0, conv: 1.0 },
+    { id: 'f10', name: 'Whey Protein (1 scoop ≈ 30g)', kcal: 390, p: 78.0, c: 7.0, f: 5.0, conv: 1.0 },
+    { id: 'f11', name: 'Papa pelada (cruda)', kcal: 77, p: 2.0, c: 17.5, f: 0.1, conv: 1.25 },
+    { id: 'f12', name: 'Zapallo Cabutiá (crudo)', kcal: 40, p: 1.2, c: 9.5, f: 0.1, conv: 1.25 },
+    { id: 'f13', name: 'Zanahoria pelada (cruda)', kcal: 41, p: 0.9, c: 9.6, f: 0.2, conv: 1.15 },
+    { id: 'f14', name: 'Arroz blanco / parboil (en crudo)', kcal: 365, p: 7.0, c: 80.0, f: 0.7, conv: 0.36 },
+    { id: 'f15', name: 'Fideos / Pastas secas (en crudo)', kcal: 355, p: 12.5, c: 72.0, f: 1.5, conv: 0.42 },
+    { id: 'f16', name: 'Avena arrollada (en crudo)', kcal: 389, p: 16.9, c: 66.3, f: 6.9, conv: 1.0 },
+    { id: 'f17', name: 'Pan integral / lactal', kcal: 250, p: 9.5, c: 45.0, f: 3.5, conv: 1.0 },
+    { id: 'f18', name: 'Puré de tomate', kcal: 32, p: 1.5, c: 6.5, f: 0.2, conv: 1.0 },
+    { id: 'f19', name: 'Banana pelada (1 med ≈ 100g)', kcal: 89, p: 1.1, c: 22.8, f: 0.3, conv: 1.0 },
+    { id: 'f20', name: 'Palta (pulpa neta)', kcal: 160, p: 2.0, c: 8.5, f: 14.7, conv: 1.0 },
+    { id: 'f21', name: 'Aceite de oliva (1 cda ≈ 10g)', kcal: 884, p: 0, c: 0, f: 100.0, conv: 1.0 },
+    { id: 'f22', name: 'Pasta de maní / Maní sin sal', kcal: 588, p: 25.0, c: 20.0, f: 50.0, conv: 1.0 }
+  ];
+
+  const MEAL_NAMES = [
+    { key: 'desayuno', title: 'Desayuno' },
+    { key: 'almuerzo', title: 'Almuerzo' },
+    { key: 'merienda', title: 'Merienda (Pre-entreno)' },
+    { key: 'cena', title: 'Cena (Post-entreno)' }
+  ];
+
+  let weighMode = { desayuno: 'raw', almuerzo: 'raw', merienda: 'raw', cena: 'raw' };
+
+  let state = {
+    config: {
+      weight: 98, height: 188, age: 28, activity: 1.55, goal: '0',
+      targetKcal: 2950, protPerKg: 2.0, fatPerKg: 0.9,
+      targetProt: 196, targetCarbs: 343, targetFat: 88
+    },
+    foods: [...DEFAULT_FOODS],
+    meals: { desayuno: [], almuerzo: [], merienda: [], cena: [] },
+    templates: { train: null, rest: null }
+  };
+
+  function switchTab(tab) {
+    ['meals', 'foods', 'settings'].forEach(t => {
+      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+      document.getElementById('nav-' + t).classList.toggle('active', t === tab);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  function loadState() {
+    const saved = localStorage.getItem('macros_s24_v2');
+    if (saved) {
+      try { state = { ...state, ...JSON.parse(saved) }; } catch (e) {}
+    }
+    syncInputs();
+    renderAll();
+  }
+
+  function saveState() {
+    localStorage.setItem('macros_s24_v2', JSON.stringify(state));
+  }
+
+  function syncInputs() {
+    document.getElementById('userWeight').value = state.config.weight;
+    document.getElementById('userHeight').value = state.config.height;
+    document.getElementById('userAge').value = state.config.age;
+    document.getElementById('userActivity').value = state.config.activity;
+    document.getElementById('userGoal').value = state.config.goal;
+    document.getElementById('targetKcal').value = state.config.targetKcal;
+    document.getElementById('protPerKg').value = state.config.protPerKg;
+    document.getElementById('fatPerKg').value = state.config.fatPerKg;
+    document.getElementById('targetCarbs').value = state.config.targetCarbs;
+  }
+
+  function recalculateTargets() {
+    const w = parseFloat(document.getElementById('userWeight').value) || 85;
+    const h = parseFloat(document.getElementById('userHeight').value) || 180;
+    const a = parseFloat(document.getElementById('userAge').value) || 28;
+    const act = parseFloat(document.getElementById('userActivity').value) || 1.55;
+    const goal = document.getElementById('userGoal').value;
+
+    Object.assign(state.config, { weight: w, height: h, age: a, activity: act, goal });
+
+    if (goal !== 'custom') {
+      const bmr = (10 * w) + (6.25 * h) - (5 * a) + 5;
+      state.config.targetKcal = Math.round((bmr * act) * (1 + parseFloat(goal) / 100));
+      document.getElementById('targetKcal').value = state.config.targetKcal;
+    }
+    recalculateMacrosFromRatio();
+  }
+
+  function saveTargetsManual() {
+    document.getElementById('userGoal').value = 'custom';
+    state.config.goal = 'custom';
+    state.config.targetKcal = parseFloat(document.getElementById('targetKcal').value) || 2500;
+    recalculateMacrosFromRatio();
+  }
+
+  function recalculateMacrosFromRatio() {
+    const w = state.config.weight;
+    const kcal = parseFloat(document.getElementById('targetKcal').value) || 2500;
+    const pRatio = parseFloat(document.getElementById('protPerKg').value) || 2.0;
+    const fRatio = parseFloat(document.getElementById('fatPerKg').value) || 0.9;
+
+    const pGrams = Math.round(w * pRatio);
+    const fGrams = Math.round(w * fRatio);
+    const cGrams = Math.round(Math.max(0, kcal - (pGrams * 4) - (fGrams * 9)) / 4);
+
+    Object.assign(state.config, {
+      targetKcal: kcal, protPerKg: pRatio, fatPerKg: fRatio,
+      targetProt: pGrams, targetFat: fGrams, targetCarbs: cGrams
+    });
+    document.getElementById('targetCarbs').value = cGrams;
+    saveState();
+    updateTotalsOnly();
+  }
+
+  function setWeighMode(mealKey, mode) {
+    weighMode[mealKey] = mode;
+    renderMeals();
+  }
+
+  function addFoodToMeal(mealKey) {
+    const foodId = document.getElementById(`sel_${mealKey}`).value;
+    const inputGrams = parseFloat(document.getElementById(`grams_${mealKey}`).value);
+    if (!foodId || isNaN(inputGrams) || inputGrams <= 0) return;
+
+    const food = state.foods.find(f => f.id === foodId);
+    if (!food) return;
+
+    const isCooked = weighMode[mealKey] === 'cooked';
+    const rawGrams = isCooked ? Math.round(inputGrams * (food.conv || 1.0)) : Math.round(inputGrams);
+
+    state.meals[mealKey].push({
+      entryId: 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+      name: food.name,
+      grams: rawGrams,
+      baseKcal: food.kcal, baseP: food.p, baseC: food.c, baseF: food.f
+    });
+
+    saveState();
+    renderAll();
+  }
+
+  function stepGrams(mealKey, entryId, delta) {
+    const item = state.meals[mealKey].find(e => e.entryId === entryId);
+    if (!item) return;
+    item.grams = Math.max(0, item.grams + delta);
+    const inp = document.getElementById(`inp_${entryId}`);
+    if (inp) inp.value = item.grams;
+    saveState();
+    updateTotalsOnly();
+  }
+
+  function updateEntryGrams(mealKey, entryId, val) {
+    const g = parseFloat(val);
+    if (isNaN(g) || g < 0) return;
+    const item = state.meals[mealKey].find(e => e.entryId === entryId);
+    if (item) {
+      item.grams = g;
+      saveState();
+      updateTotalsOnly();
+    }
+  }
+
+  function removeEntry(mealKey, entryId) {
+    state.meals[mealKey] = state.meals[mealKey].filter(e => e.entryId !== entryId);
+    saveState();
+    renderAll();
+  }
+
+  function calcItem(e) {
+    const r = e.grams / 100.0;
+    return { kcal: e.baseKcal * r, p: e.baseP * r, c: e.baseC * r, f: e.baseF * r };
+  }
+
+  function renderMeals() {
+    const container = document.getElementById('mealsContainer');
+    const optionsHtml = state.foods.map(f =>
+      `<option value="${f.id}">${f.name} (${f.kcal} kcal)</option>`
+    ).join('');
+
+    container.innerHTML = MEAL_NAMES.map(m => {
+      const entries = state.meals[m.key] || [];
+      const mode = weighMode[m.key] || 'raw';
+
+      const itemsHtml = entries.map(e => {
+        const mac = calcItem(e);
+        return `
+          <div class="food-item">
+            <div class="food-top">
+              <div>
+                <div class="food-name">${e.name}</div>
+                <div class="food-macros" id="mac_${e.entryId}">
+                  <strong>${Math.round(mac.kcal)} kcal</strong> · P: ${mac.p.toFixed(1)}g · C: ${mac.c.toFixed(1)}g · G: ${mac.f.toFixed(1)}g
+                </div>
+              </div>
+              <button class="btn-danger" onclick="removeEntry('${m.key}', '${e.entryId}')">✕</button>
+            </div>
+            <div class="food-controls">
+              <span style="font-size:0.75rem; color:var(--muted);">Peso en crudo:</span>
+              <div class="stepper">
+                <button class="btn-step" onclick="stepGrams('${m.key}', '${e.entryId}', -10)">-10</button>
+                <input type="number" inputmode="decimal" id="inp_${e.entryId}" class="gram-input" value="${e.grams}"
+                  oninput="updateEntryGrams('${m.key}', '${e.entryId}', this.value)">
+                <button class="btn-step" onclick="stepGrams('${m.key}', '${e.entryId}', 10)">+10</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="card">
+          <div class="card-header">
+            <h2>${m.title}</h2>
+            <div class="meal-badge" id="hdr_${m.key}">0 kcal</div>
+          </div>
+
+          <div class="mode-switch">
+            <button class="mode-opt ${mode === 'raw' ? 'active' : ''}" onclick="setWeighMode('${m.key}', 'raw')">Pesado en Crudo</button>
+            <button class="mode-opt ${mode === 'cooked' ? 'active' : ''}" onclick="setWeighMode('${m.key}', 'cooked')">Pesado ya Cocido</button>
+          </div>
+
+          <div class="row-add">
+            <select id="sel_${m.key}">${optionsHtml}</select>
+            <input type="number" inputmode="decimal" id="grams_${m.key}" value="100" placeholder="Gramos">
+          </div>
+          <button onclick="addFoodToMeal('${m.key}')">
+            + Agregar (${mode === 'raw' ? 'Gramos en Crudo' : 'Convertir de Cocido a Crudo'})
+          </button>
+
+          <div>${itemsHtml}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateTotalsOnly() {
+    let dKcal = 0, dP = 0, dC = 0, dF = 0;
+
+    MEAL_NAMES.forEach(m => {
+      let mK = 0, mP = 0, mC = 0, mF = 0;
+      (state.meals[m.key] || []).forEach(e => {
+        const mac = calcItem(e);
+        mK += mac.kcal; mP += mac.p; mC += mac.c; mF += mac.f;
+        const rowEl = document.getElementById(`mac_${e.entryId}`);
+        if (rowEl) {
+          rowEl.innerHTML = `<strong>${Math.round(mac.kcal)} kcal</strong> · P: ${mac.p.toFixed(1)}g · C: ${mac.c.toFixed(1)}g · G: ${mac.f.toFixed(1)}g`;
+        }
+      });
+      const hdr = document.getElementById(`hdr_${m.key}`);
+      if (hdr) hdr.textContent = `${Math.round(mK)} kcal | P:${Math.round(mP)}g C:${Math.round(mC)}g G:${Math.round(mF)}g`;
+      dKcal += mK; dP += mP; dC += mC; dF += mF;
+    });
+
+    const { targetKcal, targetProt, targetCarbs, targetFat } = state.config;
+    document.getElementById('totKcal').textContent = Math.round(dKcal);
+    document.getElementById('totProt').textContent = Math.round(dP);
+    document.getElementById('totCarbs').textContent = Math.round(dC);
+    document.getElementById('totFat').textContent = Math.round(dF);
+
+    const setBar = (remId, barId, cur, targ, unit) => {
+      const rem = Math.round(targ - cur);
+      const el = document.getElementById(remId);
+      el.textContent = rem >= 0 ? `Faltan ${rem}${unit}` : `+${Math.abs(rem)}${unit}`;
+      el.style.color = rem >= 0 ? '#94a3b8' : '#f87171';
+      document.getElementById(barId).style.width = Math.min(100, Math.max(0, (cur / (targ || 1)) * 100)) + '%';
+    };
+
+    setBar('remKcal', 'barKcal', dKcal, targetKcal, '');
+    setBar('remProt', 'barProt', dP, targetProt, 'g');
+    setBar('remCarbs', 'barCarbs', dC, targetCarbs, 'g');
+    setBar('remFat', 'barFat', dF, targetFat, 'g');
+  }
+
+  function addCustomFood() {
+    const name = document.getElementById('newFoodName').value.trim();
+    const kcal = parseFloat(document.getElementById('newFoodKcal').value);
+    const p = parseFloat(document.getElementById('newFoodProt').value) || 0;
+    const c = parseFloat(document.getElementById('newFoodCarbs').value) || 0;
+    const f = parseFloat(document.getElementById('newFoodFat').value) || 0;
+    const conv = parseFloat(document.getElementById('newFoodType').value) || 1.0;
+
+    if (!name || isNaN(kcal)) { alert('Completa nombre y calorías.'); return; }
+    state.foods.unshift({ id: 'c_' + Date.now(), name, kcal, p, c, f, conv });
+    document.getElementById('newFoodName').value = '';
+    document.getElementById('newFoodKcal').value = '';
+    document.getElementById('newFoodProt').value = '';
+    document.getElementById('newFoodCarbs').value = '';
+    document.getElementById('newFoodFat').value = '';
+    saveState();
+    renderAll();
+    alert('Producto guardado.');
+  }
+
+  function deleteFood(id) {
+    state.foods = state.foods.filter(f => f.id !== id);
+    saveState();
+    renderAll();
+  }
+
+  function renderCatalog() {
+    document.getElementById('foodCount').textContent = state.foods.length;
+    document.getElementById('catalogList').innerHTML = state.foods.map(f => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:0.88rem; font-weight:600;">${f.name}</div>
+          <div style="font-size:0.75rem; color:var(--muted);">100g: ${f.kcal} kcal · P:${f.p}g C:${f.c}g G:${f.f}g</div>
+        </div>
+        <button class="btn-danger" onclick="deleteFood('${f.id}')">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function saveTemplate(type) {
+    state.templates[type] = JSON.parse(JSON.stringify(state.meals));
+    saveState();
+    alert(type === 'train' ? 'Guardado como plantilla de Día de Entreno.' : 'Guardado como plantilla de Día de Descanso.');
+  }
+
+  function loadTemplate(type) {
+    if (!state.templates || !state.templates[type]) {
+      alert('Primero arma tus comidas del día y guárdalas como plantilla en la pestaña "Objetivos".');
+      return;
+    }
+    state.meals = JSON.parse(JSON.stringify(state.templates[type]));
+    saveState();
+    renderAll();
+  }
+
+  function clearDay() {
+    if (!confirm('¿Vaciar las comidas de hoy?')) return;
+    state.meals = { desayuno: [], almuerzo: [], merienda: [], cena: [] };
+    saveState();
+    renderAll();
+  }
+
+  function exportCSV() {
+    let rows = [['Comida', 'Producto', 'Gramos Crudo', 'Kcal', 'Prot', 'Carbs', 'Grasas']];
+    MEAL_NAMES.forEach(m => {
+      (state.meals[m.key] || []).forEach(e => {
+        const mac = calcItem(e);
+        rows.push([m.title, `"${e.name}"`, e.grams, Math.round(mac.kcal), mac.p.toFixed(1), mac.c.toFixed(1), mac.f.toFixed(1)]);
+      });
+    });
+    const link = document.createElement('a');
+    link.href = encodeURI('data:text/csv;charset=utf-8,' + rows.map(r => r.join(',')).join('\n'));
+    link.download = `macros_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+  }
+
+  function exportBackup() {
+    const link = document.createElement('a');
+    link.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(state));
+    link.download = 'respaldo_macros_s24.json';
+    link.click();
+  }
+
+  function importBackup(ev) {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        state = JSON.parse(e.target.result);
+        saveState(); syncInputs(); renderAll();
+        alert('Datos restaurados.');
+      } catch (err) { alert('Archivo inválido.'); }
+    };
+    reader.readAsText(file);
+  }
+
+  function renderAll() {
+    renderCatalog();
+    renderMeals();
+    updateTotalsOnly();
+  }
+
+  loadState();
+</script>
+</body>
+</html>
